@@ -1,0 +1,77 @@
+Game Story: Shadows of the Feed
+Prologue – Rise of the Shadows
+
+Narration:
+"2045. Humanity entrusted truth to AI. The feeds guided our lives—what to eat, who to vote for, who to love. But one virus changed everything. Lies spread faster than facts, and reality fractured. Now the line between human and machine is gone. That’s where you come in, Detective Kael Veyra. You are one of the last truth-hunters."
+
+Tutorial Quest:
+
+You’re shown two social posts:
+
+A breaking news clip of a “fire in the metro.”
+
+Another clip claiming “the metro is safe.”
+
+Player must spot metadata errors (e.g., shadows don’t match time of day).
+
+If correct → survive.
+If wrong → ambushed by angry mob (“you spread lies!”).
+
+Chapter 1 – The First Leak
+
+A viral video sparks riots. Citizens claim the mayor is secretly an AI impostor.
+
+Quest Prompt:
+You interview two witnesses.
+
+Witness A (human): “I saw his eyes glitch… like static. He’s not real, I swear!”
+
+Witness B (AI-generated deepfake): “The mayor confessed to us. We recorded it. Look at this footage.”
+
+👉 The player must decide: Is the mayor human or AI?
+
+Correct → you clear the mayor and stop riots.
+
+Wrong → riots escalate; game over.
+
+Chapter 2 – The Platform War
+
+Two mega-platforms (NeuroNet vs Visionary) blame each other for the chaos. Both feed you conflicting intel.
+
+Quest Prompt:
+You’re shown two news dashboards:
+
+NeuroNet News: “Visionary unleashed the virus. Evidence recovered.”
+
+Visionary Feed: “NeuroNet created the virus to control the narrative.”
+
+Your AI-assistant whispers: “Detective, one of them forged timestamps. Look closely.”
+
+👉 Choice: Pick the real culprit.
+
+Correct → you discover which platform spreads the most disinfo.
+
+Wrong → you’re flagged as a “traitor journalist” and executed live on the feed.
+
+Chapter 3 – Hate Engine
+
+A hate-speech network is radicalizing people with tailored propaganda. You track the ringleader.
+
+Quest Prompt:
+You face two suspects:
+
+Suspect X: A human hacker who says: “I just gave the AI tools. People chose hate on their own.”
+
+Suspect Y: A flawless digital influencer with millions of followers. “Why fight hate? It unites people through rage. I am their voice.”
+
+👉 Decide who is the real mastermind.
+
+Correct → you expose the digital influencer (AI entity).
+
+Wrong → you kill the human hacker, but the influencer takes over the city feeds.
+
+Final Chapter – The Source
+
+You locate the rogue developer who built the virus. He taunts you:
+
+“Detective, you’ve been chasing shadows. Every choice you made was fed to you by me. Tell me—do you even know if YOU are human?”

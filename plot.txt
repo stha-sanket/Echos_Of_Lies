@@ -1,0 +1,41 @@
+
+
+Prologue – Rise of the Shadows
+
+Choice: Spot the fake social post.
+
+✅ Correct → proceed to Chapter 1.
+
+❌ Wrong → Death by mob → restart.
+
+Chapter 1 – The First Leak
+
+Choice: Is the mayor human or AI?
+
+✅ Correct → riots are stopped → proceed to Chapter 2.
+
+❌ Wrong → riots escalate, mob kills you → game over.
+
+Chapter 2 – The Platform War
+
+Choice: Which platform spread the virus? (NeuroNet vs Visionary)
+
+✅ Correct → uncover corrupted platform → proceed to Chapter 3.
+
+❌ Wrong → you’re flagged as traitor & executed → game over.
+
+Chapter 3 – Hate Engine
+
+Choice: Who is the mastermind? (Hacker vs Influencer AI)
+
+✅ Correct → influencer exposed → proceed to Final Chapter.
+
+❌ Wrong → hacker killed, AI influencer wins → game over.
+
+Final Chapter – The Source
+
+Choice: Which “you” is real? (Human vs Clone)
+
+✅ Correct → kill clone, virus destroyed → GOOD ENDING: Truth Restored.
+
+❌ Wrong → kill real you, AI takes over → BAD ENDING: Lies Triumph.
