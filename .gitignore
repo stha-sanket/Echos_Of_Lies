@@ -37,9 +37,6 @@ remove_bg_output/
 # Scrap directory
 scrap/
 
-# Temporary files
-plot.txt
-story.txt
 
 # IDE / Editor specific
 .idea/

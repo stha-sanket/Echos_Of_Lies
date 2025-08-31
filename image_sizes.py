@@ -1,0 +1,31 @@
+# Image sizes configuration
+# Format: 'path/to/image.png': (width, height)
+IMAGE_SIZES = {
+    'background/background.png': (1600, 1200),  # Matches WORLD_WIDTH and WORLD_HEIGHT
+    'main character/detective.png': (50, 50),
+    'main character/game_over.png': (600, 400),
+    'main character/game_complete.png': (600, 400),
+    'main character/game_title.png': (1280, 720),
+    'main character/interact.png': (30, 30),
+    'main character/inventory.png': (30, 30),
+    'main character/prolongue_1.png': (1280, 720),
+    'main character/prolongue_2.png': (1280, 720),
+    'main character/prolongue_3.png': (1280, 720),
+    'main character/prolongue_4.png': (1280, 720),
+    'interactable/detective_table.png': (100, 80),
+    'interactable/mayor.png': (80, 60),
+    'interactable/npc_bad.png': (100, 70),
+    'interactable/npc_good.png': (90, 70),
+    'interactable/npc.png': (80, 80),
+    'interactable/quest.png': (150, 100),
+    'interactable/telephone_booth.png': (100, 80),
+    'non_interactable/blue_car.png': (150, 150),
+    'non_interactable/mayor_mansion.png': (350, 250),
+    'non_interactable/modern_house.png': (250, 250),
+    'non_interactable/motel.png': (350, 250),
+    'non_interactable/normal_house.png': (150, 150),
+    'non_interactable/policestation.png': (350, 250),
+    'non_interactable/red_car.png': (150, 150),
+    'evidence/poster_fake.png': (300, 300),
+    'evidence/poster_real.png': (300, 300),
+}
