@@ -41,6 +41,7 @@ PROLOGUE = 1
 EXPLORATION = 2
 DIALOGUE = 3
 QUEST_LOG = 4
+DECISION_MAKING = 5 # New state for mayor decision
 
 # Player properties
 PLAYER_SIZE = 40
@@ -52,17 +53,54 @@ NPC_SIZE = 40
 # Corrupted Terminal properties
 TERMINAL_SIZE = 30
 
+# New asset sizes
+QUEST_TRIGGER_SIZE = 40
+MAYOR_SIZE = 60 # Mayor might be larger
+NPC_GOOD_SIZE = 40
+NPC_BAD_SIZE = 40
+
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
         try:
             self.image = pygame.image.load("detective.png").convert_alpha()
             self.image = pygame.transform.scale(self.image, (PLAYER_SIZE, PLAYER_SIZE))
+            print("DEBUG: detective.png loaded successfully.")
         except pygame.error:
-            print("Warning: detective.png not found. Using default blue square for player.")
+            print("DEBUG: Warning: detective.png not found. Using default blue square for player.")
             self.image = pygame.Surface([PLAYER_SIZE, PLAYER_SIZE])
         self.rect = self.image.get_rect()
         self.rect.center = (WIDTH // 2, HEIGHT // 2)
+        print(f"DEBUG: Player initialized at center: {self.rect.center}")
+
+# Load new images
+try:
+    QUEST_IMAGE = pygame.image.load("quest.png").convert_alpha()
+    QUEST_IMAGE = pygame.transform.scale(QUEST_IMAGE, (QUEST_TRIGGER_SIZE, QUEST_TRIGGER_SIZE))
+except pygame.error:
+    print("Warning: quest.png not found. Using default yellow square for quest trigger.")
+    QUEST_IMAGE = None
+
+try:
+    NPC_GOOD_IMAGE = pygame.image.load("npc_good.png").convert_alpha()
+    NPC_GOOD_IMAGE = pygame.transform.scale(NPC_GOOD_IMAGE, (NPC_GOOD_SIZE, NPC_GOOD_SIZE))
+except pygame.error:
+    print("Warning: npc_good.png not found. Using default green square for good NPC.")
+    NPC_GOOD_IMAGE = None
+
+try:
+    NPC_BAD_IMAGE = pygame.image.load("npc_bad.png").convert_alpha()
+    NPC_BAD_IMAGE = pygame.transform.scale(NPC_BAD_IMAGE, (NPC_BAD_SIZE, NPC_BAD_SIZE))
+except pygame.error:
+    print("Warning: npc_bad.png not found. Using default red square for bad NPC.")
+    NPC_BAD_IMAGE = None
+
+try:
+    MAYOR_IMAGE = pygame.image.load("mayor.png").convert_alpha()
+    MAYOR_IMAGE = pygame.transform.scale(MAYOR_IMAGE, (MAYOR_SIZE, MAYOR_SIZE))
+except pygame.error:
+    print("Warning: mayor.png not found. Using default blue square for mayor.")
+    MAYOR_IMAGE = None
 
     def update(self, keys):
         if keys[pygame.K_LEFT]:
@@ -85,16 +123,20 @@ class Player(pygame.sprite.Sprite):
             self.rect.bottom = HEIGHT
 
 class NPC(pygame.sprite.Sprite):
-    def __init__(self, x, y, name, dialogue_states, is_helpful=True, quest_to_give=None, quest_to_complete=None):
+    def __init__(self, x, y, name, dialogue_states, is_helpful=True, quest_to_give=None, quest_to_complete=None, image_asset=None):
         super().__init__()
-        try:
-            self.original_image = pygame.image.load("npc.png").convert_alpha()
-            self.original_image = pygame.transform.scale(self.original_image, (NPC_SIZE, NPC_SIZE))
+        if image_asset:
+            self.original_image = image_asset
             self.image = self.original_image.copy()
-        except pygame.error:
-            print(f"Warning: npc.png not found. Using default {'green' if is_helpful else 'red'} square for {name}.")
-            self.image = pygame.Surface([NPC_SIZE, NPC_SIZE])
-        self.color = GREEN if is_helpful else RED
+        else:
+            try:
+                self.original_image = pygame.image.load("npc.png").convert_alpha()
+                self.original_image = pygame.transform.scale(self.original_image, (NPC_SIZE, NPC_SIZE))
+                self.image = self.original_image.copy()
+            except pygame.error:
+                print(f"Warning: npc.png not found. Using default {'green' if is_helpful else 'red'} square for {name}.")
+                self.image = pygame.Surface([NPC_SIZE, NPC_SIZE])
+        self.color = GREEN if is_helpful else RED # This color is still used for fallback square
         self.rect = self.image.get_rect()
         self.rect.topleft = (x, y)
         self.name = name
@@ -105,6 +147,14 @@ class NPC(pygame.sprite.Sprite):
 
     def get_dialogue(self, player_quests):
         # Determine current dialogue based on quest status
+        # Special handling for Mayor decision point
+        if self.name == "Mayor" and "quest_chapter_1_mayor" in player_quests:
+            mayor_quest = player_quests["quest_chapter_1_mayor"]
+            if mayor_quest['objectives']["subquest_good_npc_info"]['completed'] and \
+               mayor_quest['objectives']["subquest_bad_npc_analysis"]['completed'] and \
+               'ready_for_decision' in self.dialogue_states:
+                return self.dialogue_states['ready_for_decision']
+
         for quest_id, quest_data in player_quests.items():
             if quest_id == self.quest_to_complete and quest_data['status'] == 'IN_PROGRESS':
                 # Check if all objectives are met for completion dialogue
@@ -149,6 +199,17 @@ class Quest:
             'giver_npc_name': self.giver_npc_name,
             'completion_npc_name': self.completion_npc_name
         }
+
+class QuestTrigger(pygame.sprite.Sprite):
+    def __init__(self, x, y, quest_id):
+        super().__init__()
+        self.image = QUEST_IMAGE if QUEST_IMAGE else pygame.Surface([QUEST_TRIGGER_SIZE, QUEST_TRIGGER_SIZE])
+        if not QUEST_IMAGE:
+            self.image.fill(YELLOW) # Fallback color
+        self.rect = self.image.get_rect()
+        self.rect.topleft = (x, y)
+        self.quest_id = quest_id
+        self.interacted = False # To ensure it only triggers once
 
 class CorruptedTerminal(pygame.sprite.Sprite):
     def __init__(self, x, y, terminal_id):
@@ -205,6 +266,28 @@ def draw_quest_log(screen, active_quests):
 
     close_text = dialogue_font.render("Press Q to close", True, LIGHT_GREY)
     screen.blit(close_text, (log_rect.x + 20, log_rect.bottom - 40))
+
+def draw_decision_screen(screen):
+    screen.fill(BLACK)
+    prompt_text = title_font.render("What is your verdict, Detective?", True, WHITE)
+    prompt_rect = prompt_text.get_rect(center=(WIDTH // 2, HEIGHT // 3))
+    screen.blit(prompt_text, prompt_rect)
+
+    human_button_text = button_font.render("Mayor is Human", True, BLACK)
+    human_button_rect = human_button_text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+    human_button_bg_rect = human_button_rect.inflate(40, 20)
+    pygame.draw.rect(screen, GREEN, human_button_bg_rect, border_radius=10)
+    pygame.draw.rect(screen, LIGHT_GREY, human_button_bg_rect, 3, border_radius=10)
+    screen.blit(human_button_text, human_button_rect)
+
+    ai_button_text = button_font.render("Mayor is AI", True, BLACK)
+    ai_button_rect = ai_button_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 100))
+    ai_button_bg_rect = ai_button_rect.inflate(40, 20)
+    pygame.draw.rect(screen, RED, ai_button_bg_rect, border_radius=10)
+    pygame.draw.rect(screen, LIGHT_GREY, ai_button_bg_rect, 3, border_radius=10)
+    screen.blit(ai_button_text, ai_button_rect)
+
+    return human_button_bg_rect, ai_button_bg_rect # Return rects for click detection
 
 def draw_start_screen(screen):
     screen.fill(BLACK)
@@ -264,10 +347,24 @@ quest2 = Quest(
     completion_npc_name="Citizen C"
 )
 
+quest_chapter_1_mayor = Quest(
+    q_id="quest_chapter_1_mayor",
+    title="The First Leak: Mayor's Identity",
+    description="A viral video claims the mayor is an AI impostor. Investigate and determine the truth.",
+    objectives={
+        "subquest_good_npc_info": "Gather information from the helpful NPC.",
+        "subquest_bad_npc_analysis": "Analyze the misleading claims from the suspicious NPC.",
+        "talk_to_mayor_for_decision": "Talk to the Mayor to make your final decision."
+    },
+    giver_npc_name="Quest Trigger", # This quest is given by interacting with the quest trigger
+    completion_npc_name="Mayor" # The Mayor will be the final decision point
+)
+
 # Store quests in a dictionary for easy lookup
 available_quests = {
     quest1.id: quest1.to_dict(),
-    quest2.id: quest2.to_dict()
+    quest2.id: quest2.to_dict(),
+    quest_chapter_1_mayor.id: quest_chapter_1_mayor.to_dict()
 }
 active_quests = {}
 completed_quests = {}
@@ -336,11 +433,75 @@ rumor_b_dialogue = {
 }
 rumor_monger_b = NPC(300, 500, "Rumor-Monger B", rumor_b_dialogue, is_helpful=False)
 
+n_npcs_to_spawn -= 1 # For NPC Good
+# NPC Good (Provides helpful hints for subquests)
+npc_good_dialogue = {
+    'initial': [
+        "Hello, Detective. I've heard whispers about the mayor. It's a tricky situation.",
+        "Some say he's an AI, others say it's a smear campaign.",
+        "Look for inconsistencies in the information you gather. AI often leaves subtle digital footprints."
+    ],
+    'subquest_good_info_complete': [
+        "You're doing well, Detective. Remember, not everything you see or hear is real.",
+        "Trust your instincts, but verify everything."
+    ],
+    'default': [
+        "Keep digging for the truth."
+    ]
+}
+npc_good = NPC(200, 300, "NPC Good", npc_good_dialogue, is_helpful=True, image_asset=NPC_GOOD_IMAGE)
+
+n_npcs_to_spawn -= 1 # For NPC Bad
+# NPC Bad (Tries to mislead the player)
+npc_bad_dialogue = {
+    'initial': [
+        "Psst, Detective. Don't believe the official story. The mayor is definitely an AI.",
+        "I have 'evidence' that proves it. Just look at this perfectly crafted video.",
+        "It's so convincing, isn't it? No human could fake this."
+    ],
+    'subquest_bad_info_complete': [
+        "Did you fall for it, Detective? The truth is what you make it.",
+        "Don't let anyone tell you otherwise."
+    ],
+    'default': [
+        "The truth is subjective, isn't it?"
+    ]
+}
+npc_bad = NPC(800, 400, "NPC Bad", npc_bad_dialogue, is_helpful=False, image_asset=NPC_BAD_IMAGE)
+
+n_npcs_to_spawn -= 1 # For Mayor
+# Mayor (Final decision point for Chapter 1)
+mayor_dialogue = {
+    'initial': [
+        "Detective, I understand you're investigating the rumors about me.",
+        "I assure you, I am human. These accusations are baseless."
+    ],
+    'ready_for_decision': [
+        "Detective, have you concluded your investigation into my identity?",
+        "What is your verdict? Am I human, or an AI impostor?"
+    ],
+    'human_choice': [
+        "Thank you, Detective. Your keen eye for truth has saved my reputation and the city from further unrest.",
+        "The riots are quelled. We can now focus on rebuilding trust. Proceed to the next chapter."
+    ],
+    'ai_choice': [
+        "You believe I am an AI? This is a grave error, Detective.",
+        "Your misjudgment has fueled the riots, and the city descends into anarchy. Game Over."
+    ],
+    'default': [
+        "The truth will always prevail."
+    ]
+}
+mayor = NPC(WIDTH // 2 - MAYOR_SIZE // 2, HEIGHT // 2 - MAYOR_SIZE // 2, "Mayor", mayor_dialogue, is_helpful=True, image_asset=MAYOR_IMAGE)
+
 n_npcs_to_spawn -= 1 # For Corrupted Terminal
 # Corrupted Terminal (Objective for Quest 1)
 corrupted_terminal = CorruptedTerminal(random.randint(50, WIDTH - 50 - TERMINAL_SIZE), random.randint(50, HEIGHT - 200 - TERMINAL_SIZE), "data_hub_terminal_01")
 
-npcs.add(citizen_a, citizen_c, rumor_monger_b)
+# Quest Trigger for Chapter 1
+chapter_1_quest_trigger = QuestTrigger(WIDTH // 2 - QUEST_TRIGGER_SIZE // 2, HEIGHT // 4, "quest_chapter_1_mayor")
+
+npcs.add(citizen_a, citizen_c, rumor_monger_b, npc_good, npc_bad, mayor)
 
 # Add remaining random NPCs
 for i in range(n_npcs_to_spawn):
@@ -354,6 +515,7 @@ for i in range(n_npcs_to_spawn):
 
 all_sprites.add(npcs)
 all_sprites.add(corrupted_terminal)
+all_sprites.add(chapter_1_quest_trigger)
 
 current_game_state = START_SCREEN
 current_dialogue_npc = None
@@ -401,6 +563,22 @@ while running:
                                     message_display_time = pygame.time.get_ticks() + 2000
                                     print("Objective 'find_terminal' for quest_data_leak completed!") # Debug
                             break # Only interact with one terminal at a time
+                    
+                    # Check for Quest Trigger interaction
+                    for trigger in all_sprites:
+                        if isinstance(trigger, QuestTrigger) and pygame.sprite.collide_rect(player, trigger):
+                            if not trigger.interacted: # Only interact once
+                                trigger.interacted = True
+                                if trigger.quest_id == "quest_chapter_1_mayor" and \
+                                   "quest_chapter_1_mayor" in available_quests and \
+                                   available_quests["quest_chapter_1_mayor"]['status'] == 'NOT_STARTED':
+                                    quest_id = "quest_chapter_1_mayor"
+                                    active_quests[quest_id] = available_quests[quest_id]
+                                    active_quests[quest_id]['status'] = 'IN_PROGRESS'
+                                    quest_accepted_message = f"Quest Accepted: {active_quests[quest_id]['title']}"
+                                    message_display_time = pygame.time.get_ticks() + 2000
+                                    print(f"Quest Accepted: {active_quests[quest_id]['title']}") # Debug
+                            break # Only interact with one trigger at a time
 
                 elif event.key == pygame.K_q: # Open Quest Log
                     current_game_state = QUEST_LOG
@@ -411,6 +589,16 @@ while running:
                     current_dialogue_text = current_dialogue_npc.get_dialogue(active_quests)[current_dialogue_line_index]
 
                     if current_dialogue_line_index == len(current_dialogue_npc.get_dialogue(active_quests)) - 1: # Last line of dialogue
+                        # Special handling for Mayor decision
+                        if current_dialogue_npc.name == "Mayor" and \
+                           "quest_chapter_1_mayor" in active_quests and \
+                           active_quests["quest_chapter_1_mayor"]['objectives']["subquest_good_npc_info"]['completed'] and \
+                           active_quests["quest_chapter_1_mayor"]['objectives']["subquest_bad_npc_analysis"]['completed']:
+                            current_game_state = DECISION_MAKING
+                            current_dialogue_npc = None # Clear NPC to prevent further dialogue
+                            current_dialogue_line_index = 0
+                            continue # Skip normal dialogue progression
+
                         # Check if NPC gives a quest
                         if current_dialogue_npc.quest_to_give and available_quests.get(current_dialogue_npc.quest_to_give, {}).get('status') == 'NOT_STARTED':
                             quest_id = current_dialogue_npc.quest_to_give
@@ -419,6 +607,22 @@ while running:
                             quest_accepted_message = f"Quest Accepted: {active_quests[quest_id]['title']}"
                             message_display_time = pygame.time.get_ticks() + 2000 # Display for 2 seconds
                             print(f"Quest Accepted: {active_quests[quest_id]['title']}") # Debug
+
+                        # Check for Chapter 1 quest objectives completion
+                        if "quest_chapter_1_mayor" in active_quests and \
+                           active_quests["quest_chapter_1_mayor"]['status'] == 'IN_PROGRESS':
+                            if current_dialogue_npc.name == "NPC Good" and \
+                               active_quests["quest_chapter_1_mayor"]['objectives']["subquest_good_npc_info"]['completed'] == False:
+                                active_quests["quest_chapter_1_mayor"]['objectives']["subquest_good_npc_info"]['completed'] = True
+                                quest_accepted_message = "Objective Complete: Gather information from helpful NPC."
+                                message_display_time = pygame.time.get_ticks() + 2000
+                                print("Objective 'subquest_good_npc_info' for quest_chapter_1_mayor completed!") # Debug
+                            elif current_dialogue_npc.name == "NPC Bad" and \
+                                 active_quests["quest_chapter_1_mayor"]['objectives']["subquest_bad_npc_analysis"]['completed'] == False:
+                                active_quests["quest_chapter_1_mayor"]['objectives']["subquest_bad_npc_analysis"]['completed'] = True
+                                quest_accepted_message = "Objective Complete: Analyze misleading claims from suspicious NPC."
+                                message_display_time = pygame.time.get_ticks() + 2000
+                                print("Objective 'subquest_bad_npc_analysis' for quest_chapter_1_mayor completed!") # Debug
 
                         # Check if NPC completes a quest
                         if current_dialogue_npc.quest_to_complete:
@@ -477,6 +681,21 @@ while running:
                 if start_button_rect.collidepoint(event.pos):
                     current_game_state = PROLOGUE
                     current_prologue_line_index = 0
+            elif current_game_state == DECISION_MAKING:
+                if human_button_rect.collidepoint(event.pos):
+                    # Correct choice: Mayor is Human
+                    print("Player chose: Mayor is Human (Correct)") # Debug
+                    active_quests["quest_chapter_1_mayor"]['objectives']["make_decision"]['completed'] = True
+                    active_quests["quest_chapter_1_mayor"]['status'] = 'COMPLETED'
+                    completed_quests["quest_chapter_1_mayor"] = active_quests.pop("quest_chapter_1_mayor")
+                    quest_accepted_message = "Chapter 1 Complete: Mayor cleared, riots stopped!"
+                    message_display_time = pygame.time.get_ticks() + 3000
+                    current_game_state = EXPLORATION # Proceed to next chapter/exploration
+                elif ai_button_rect.collidepoint(event.pos):
+                    # Incorrect choice: Mayor is AI
+                    print("Player chose: Mayor is AI (Incorrect - Game Over)") # Debug
+                    # For now, just exit the game for "Game Over"
+                    running = False # This will end the game loop
 
     # Drawing
 
@@ -484,6 +703,8 @@ while running:
         start_button_rect = draw_start_screen(SCREEN)
     elif current_game_state == PROLOGUE:
         draw_prologue(SCREEN, prologue_text[current_prologue_line_index])
+    elif current_game_state == DECISION_MAKING:
+        human_button_rect, ai_button_rect = draw_decision_screen(SCREEN)
     elif current_game_state == EXPLORATION:
         if BACKGROUND_IMAGE:
             SCREEN.blit(BACKGROUND_IMAGE, (0, 0))
@@ -491,7 +712,9 @@ while running:
             SCREEN.fill(BLACK)
         keys = pygame.key.get_pressed()
         player.update(keys)
+        print(f"DEBUG: Player position: {player.rect.center}")
         all_sprites.draw(SCREEN)
+        print("DEBUG: all_sprites.draw(SCREEN) called.")
 
         # Draw quest indicators (simple yellow square above NPC if they give/complete a quest)
         # If you want to use an image for the quest indicator, uncomment and modify the following:
